@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>upload progress</title>
+  <style>
+    #progress {
+      height: 20px;
+      width: 300px;
+      margin-bottom: 30px;
+    }
+    #progress span {
+      display: block;
+      height: 20px;
+      width: 0;
+      color: #fff;
+      font-size: 12px;
+    }
+    .red {
+      background-color: red;
+    }
+    .green {
+      background-color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>多文件上传  之 xhr formdata 上传进度条 progress</h1>
+  选择文件(可多选):
+  <input type="file" id="f1" multiple> <br />
+
+  <div id="progress">
+    <span class="red"></span>
+  </div>
+
+  <button type="button" id="btn-submit">上 传</button>
+
+  <section>
+    <p>Network选slow 3G</p>
+    <p>页面内增加一个用于显示进度的标签 div.progress</p>
+    <p>js 内处理增加进度处理的监听函数xhr.upload.onprogress</p>
+    <p>event.lengthComputable这是一个状态，表示发送的长度有了变化，可计算</p>
+    <p>event.loaded表示发送了多少字节</p>
+    <p>event.total表示文件总大小</p>
+    <p>根据event.loaded和event.total计算进度，渲染div.progress</p>
+    <p>xhr.upload.onprogress要写在xhr.send方法前面，否则event.lengthComputable状态不会改变，只有在最后一次才能获得，也就是100%的时候.</p>
+  </section>
+  
+</body>
+</html>
+
+<script>
+  function submitUpload () {
+    var progressSpan = document.getElementById('progress').firstElementChild
+    var fileList = document.getElementById('f1').files
+    progressSpan.style.width = 0
+    progressSpan.classList.remove('green')
+
+    if (!fileList.length) {
+      alert('请选择文件')
+      return
+    }
+
+    var formData = new FormData()
+    for (let i = 0; i < fileList.length; i++) {
+      formData.append('f1', fileList[i])
+    }
+
+    var xhr =  new XMLHttpRequest()
+    xhr.open('POST', 'http://localhost:8100', true)
+    xhr.onreadystatechange = function () {
+      console.log('state change', xhr.readyState)
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        var obj = JSON.parse(xhr.responseText)
+        console.log(obj)
+        if (obj.fileUrl.length) {
+          alert('上传成功')
+        }
+      }
+    }
+
+    xhr.onprogress = updateProgress
+    xhr.upload.onprogress = updateProgress
+    //注意 send 一定要写在最下面，否则 onprogress 只会执行最后一次 也就是100%的时候
+    xhr.send(formData)
+
+    function updateProgress (event) {
+      console.log(event)
+      if (event.lengthComputable) {
+        let completedPercent = (event.loaded / event.total * 100).toFixed(2)
+        progressSpan.style.width = completedPercent + '%'
+        progressSpan.innerHTML = completedPercent + '%'
+        if (completedPercent > 90) {
+          progressSpan.classList.add('green')
+        }
+        console.log('已上传:' + completedPercent)
+      }
+    }
+
+
+  }
+
+  document.getElementById('btn-submit').addEventListener('click', submitUpload)
+</script>

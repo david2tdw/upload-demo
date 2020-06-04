@@ -8,6 +8,11 @@
     "demo2": "node ./demo2/server/app.js",
     "demo3": "node ./demo3/server/app.js",
     "demo4": "node ./demo4/server/app.js",
+    "demo5": "node ./demo5/server/app.js",
+    "demo6": "node ./demo6/server/app.js",
+    "demo7": "node ./demo7/server/app.js",
+    "demo8": "node ./demo8/server/app.js",
+    "demo9": "node ./demo9/server/app.js",
     "test": ""
   },
   "keywords": [],

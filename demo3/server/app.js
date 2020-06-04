@@ -8,7 +8,7 @@ var Koa = require('koa')
 var koaBody = require('koa-body')
 // https://www.npmjs.com/package/koa-static
 var koaStatic  = require('koa-static')
-
+var cors = require('koa2-cors')
 
 const app = new Koa()
 const port = process.env.PORT || '8100'
@@ -34,7 +34,14 @@ app.on('error', (err) => {
 app.use(koaStatic(
   path.resolve(__dirname, '../static')
 ))
-
+// 开启跨域
+app.use(
+  cors({
+    origin: function (ctx) {
+      return '*' // 允许来自所有域名请求
+    },
+  })
+)
 
 //二次处理文件，修改名称
 app.use(ctx => {
