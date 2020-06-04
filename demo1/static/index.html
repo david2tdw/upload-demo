@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      section {
+        border: 1px solid grey;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>最原始的上传文件操作 - 单文件上传</h1>
+    <h2>使用 form 表单直接请求,不用 js,页面会刷新</h2>
+
+    <section>
+      <p>后台通过input的name属性接收file内容</p>
+      <p>label for 和 display:none; 来隐藏默认的input框</p>
+    </section>
+    <br/><br/><br/>
+    
+    <form method="POST" action="http://localhost:8100" enctype="multipart/form-data">
+      <label for="f1">choose file to upload</label>
+      <input type="file" id="f1" name="f2" style="display: none;" />
+
+      <button type="submit">上 传</button>
+    </form>
+  </body>
+</html>
