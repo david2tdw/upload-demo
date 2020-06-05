@@ -3,51 +3,219 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>无刷新上传</title>
+    <title>多文件上传+预览+取消</title>
+    <style>
+      .addfile {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        background: #666660;
+        color: #fff;
+        font-size: 14px;
+        text-align: center;
+        line-height: 50px;
+        cursor: pointer;
+      }
+      /* 将input覆盖在上面 opacity: 0; 隐藏 */
+      .addfile input {
+        position: absolute;
+        display: block;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        opacity: 0;
+      }
+      .img-box {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .img-box .item {
+        width: 200px;
+        height: 130px;
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+      }
+      .img-box .item img {
+        width: 100%;
+        height: 80%;
+      }
+      .progress {
+        position: relative;
+        height: 20px;
+        width: 70%;
+      }
+      .progress span {
+        display: block;
+        height: 20px;
+        width: 0;
+        color: #000;
+        font-size: 12px;
+      }
+      .progress button {
+        position: absolute;
+        top: 0;
+        right: -60px;
+      }
+      .red {
+        background-color: red;
+      }
+      .green {
+        background-color: green;
+      }
+    </style>
   </head>
   <body>
-    <h1>多文件上传 之 xhr formdata</h1>
-    选择文件(可多选):
-    <input type="file" id="f1" multiple />
-    <button type="button" id="btn-submit">上 传</button>
+    <h1>多文件上传之预览 + 多进度条 progress+取消</h1>
+    <div>
+      选择文件(可多选):
+      <div class="addfile">
+        添加文件
+        <input type="file" id="f1" multiple />
+      </div>
 
-    <section>
-      ajax上传会有跨域的问题。
-      index.html直接双击打开，不能使用live server打开，否则在返回数据的时候会刷新页面。
-    </section>
+      <div class="img-box"></div>
+      <button type="button" id="btn-submit">上 传</button>
+    </div>
   </body>
-  <script>
-    function submitUpload() {
-      console.log('submit')
-      //获得文件列表，注意这里不是数组，而是对象
-      var fileList = document.querySelector('#f1').files
-      console.log(fileList)
-      if (!fileList.length) {
-        alert('empty')
-        return
-      }
-      var formData = new FormData()
-      // formData.append()
-      for (let i = 0; i < fileList.length; i++) {
-        formData.append('f1', fileList[i])
+</html>
+
+<script>
+  //上传最大数量
+  const fileMaxCount = 6
+  // 多图预览的容器
+  var imgBox = document.getElementsByClassName('img-box')[0]
+  //保存待上传的文件以及相关附属信息
+  var willUploadFile = []
+
+  var fileElem = document.getElementById('f1')
+  // 添加change事件
+  fileElem.addEventListener('change', function (event) {
+    let fileList = fileElem.files
+    // 多文件上传
+    if (
+      willUploadFile.length > fileMaxCount ||
+      fileList.length > fileMaxCount ||
+      willUploadFile.length + fileList.length > fileMaxCount
+    ) {
+      alert('最多只能上传' + fileMaxCount + '张图')
+      return
+    }
+    // 遍历所有的图片
+    for (let i = 0; i < fileList.length; i++) {
+      let previewFile = fileList[i]
+      let img = document.createElement('img')
+      // 每一个图片预览区域
+      let item = document.createElement('div')
+      // 每一个图片预览区域的进度条
+      let progress = document.createElement('div')
+
+      progress.className = 'progress'
+      progress.innerHTML = '<span class="red"></span> <button type="button">Abort</button>'
+
+      item.className = 'item'
+
+      img.src = window.URL.createObjectURL(previewFile)
+      img.onload = function () {
+        // 显示后释放这块内存
+        window.URL.revokeObjectURL(this.src)
       }
 
-      var xhr = new XMLHttpRequest()
-      xhr.open('POST', 'http://localhost:8100', true)
-      xhr.send(formData)
+      item.appendChild(img)
+      item.appendChild(progress)
+      imgBox.appendChild(item)
 
-      xhr.onreadystatechange = function () {
-        console.log('state change', xhr.readyState)
-        if (this.readyState === 4 && this.status === 200) {
-          var obj = JSON.parse(xhr.responseText)
-          console.log(obj)
-          if (obj.fileUrl.length) {
-            alert('上传成功')
-          }
+      // 把每个图片的信息放到数组中
+      willUploadFile.push({
+        file: previewFile, // 图片文件
+        item, // 每个图片动态添加内容
+        progress, // 进度条内容
+      })
+    }
+  })
+
+  function xhrSend({ file, progress }) {
+    let progressSpan = progress.firstElementChild
+    let btnCancel = progress.getElementsByTagName('button')[0]
+
+    progressSpan.style.width = 0
+    progressSpan.classList.remove('green')
+
+    let formData = new FormData()
+    formData.append('f1', file)
+
+    var xhr = new XMLHttpRequest()
+    xhr.open('POST', 'http://localhost:8100', true)
+
+    xhr.onreadystatechange = function () {
+      console.log('state change', xhr.readyState)
+      //调用 abort 后，state 立即变成了4,并不会变成0
+      //增加自定义属性  xhr.uploaded
+      if (xhr.readyState === 4 && xhr.uploaded) {
+        let obj = JSON.parse(xhr.responseText)
+        console.log(obj)
+        if (obj.fileUrl.length) {
+          // alert()
         }
       }
     }
+    xhr.onerror = (e) => {
+      console.log('http error:', e)
+    }
+    // 变化进度条
+    xhr.onprogress = updateProgress
+    xhr.upload.onprogress = updateProgress
 
-    document.getElementById('btn-submit').addEventListener('click', submitUpload)
-  </script>
-</html>
+    function updateProgress(event) {
+      // https://developer.mozilla.org/zh-CN/docs/Web/API/ProgressEvent
+      if (event.lengthComputable) {
+        let completedPercent = ((event.loaded / event.total) * 100).toFixed(2)
+        progressSpan.style.width = completedPercent + '%'
+        progressSpan.innerHTML = completedPercent + '%'
+        if (completedPercent > 90) {
+          progressSpan.classList.add('green')
+        }
+        if (completedPercent >= 100) {
+          xhr.uploaded = true
+        }
+        console.log('已上传:' + completedPercent)
+      }
+    }
+    // https://www.runoob.com/jsref/met-element-removeeventlistener.html
+    // btnCancel.removeEventListener('click', function (){})
+    btnCancel.addEventListener('click', function (event) {
+      console.log('abort')
+      if (xhr && xhr.readyState !== 4) {
+        // 取消上传
+        xhr.abort()
+      }
+    })
+    
+    // 注意 send 一定要写在最下面，否则 onprogress 只会执行最后一次 也就是100%的时候
+    // 发送时  Content-Type默认就是: multipart/form-data;
+    xhr.send(formData)
+    // 必须要return xhr，否则有些图片不会上传
+    // return 必须写在监听器后面，否则EventListener无法添加成功
+    return xhr
+  }
+
+  // 文件上传
+  function submitUpload(willFiles) {
+    if (!willFiles.length) {
+      return
+    }
+    //遍历文件信息 分别上传每个文件
+    willFiles.forEach(function (item) {
+      xhrSend({
+        file: item.file,
+        progress: item.progress,
+      })
+    })
+  }
+  //绑定提交事件
+  let submitBtn = document.getElementById('btn-submit')
+  submitBtn.addEventListener('click', function () {
+    submitUpload(willUploadFile)
+  })
+</script>
