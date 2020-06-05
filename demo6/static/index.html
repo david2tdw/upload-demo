@@ -70,7 +70,9 @@
     }
 
     xhr.onprogress = updateProgress
+    // xhr.upload添加progress事件
     xhr.upload.onprogress = updateProgress
+    
     //注意 send 一定要写在最下面，否则 onprogress 只会执行最后一次 也就是100%的时候
     xhr.send(formData)
 
