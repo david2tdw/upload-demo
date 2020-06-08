@@ -81,12 +81,14 @@ app.use((ctx) => {
         
         var writeStream = fs.createWriteStream(`${folder}${filename}`);
 
-        var cindex=0;
+        var cindex = 0;
         //合并文件
         function fnMergeFile(){
             var fname = `${folder}${cindex}-${fileToken}`;
             var readStream = fs.createReadStream(fname);
-            readStream.pipe(writeStream, { end: false });
+            readStream.pipe(writeStream, {
+              end: (cindex + 1 === chunkCount) ? true : false 
+            });
             readStream.on("end", function () {
                 fs.unlink(fname, function (err) {
                     if (err) {

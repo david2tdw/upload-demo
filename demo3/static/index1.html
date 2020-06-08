@@ -7,30 +7,15 @@
   </head>
   <body>
     <h1>最原始的上传文件操作 - 多文件上传 之 iframe 局部刷新</h1>
-    <iframe src="" frameborder="0" id="iframe-id" name="iframe-name"></iframe>
-    <form method="post" target="iframe-name" action="http://localhost:8100" enctype="multipart/form-data">
+    <iframe src="" frameborder="0" id="iframe-id" name="iframe-name" style="display:none;"></iframe>
+    <form method="post" target="iframe-name" action="http://localhost:5500" enctype="multipart/form-data">
       选择文件(可多选):
       <input type="file" name="f1" id="f1" multiple />
 
       <button type="submit">上 传</button>
     </form>
-
-    <section>
-      <p>iframe存在跨域问题</p>
-      <p>iframe通过style="display:none;"隐藏iframe。</p>
-      <p>form的target设置为iframe的name</p>
-      <p>在upload后返回内容显示在iframe里</p>
-      <p>通过js取出iframe里的内容进行处理。</p>
-      <p>https://stackoverflow.com/questions/25098021/securityerror-blocked-a-frame-with-origin-from-accessing-a-cross-origin-frame</p>
-      <p></p>
-      
-      
-      
-      
-      
-      
-    </section>
   </body>
+
   <script>
     var iframe = document.querySelector('#iframe-id')
     iframe.addEventListener('load', function () {
@@ -39,15 +24,13 @@
       // iframe.contentWindow.window.postMessage('aaaaaa' , '*')
       // var result = iframe.contentWindow.document.body.innerText
       var result = iframe.contentWindow.document.body.innerText;
-      /*
-      console.log(iframe.contentWindow.document)
-      var result =  iframe.contentWindow.document.body.innerText
+
       //得到结果，做后续处理，如图片预览
       var obj = JSON.parse(result);
       // var obj = JSON.parse(result);
       alert(result)
       // console.log(result)
-      */
+   
     })
 
     window.addEventListener('message', event => console.log(event))

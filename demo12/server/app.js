@@ -1,81 +1,117 @@
-var http = require('http')
-var path = require('path')
+/**
+ * 服务入口
+ */
+var http = require('http');
+var koaStatic = require('koa-static');
+var path = require('path');
+var koaBody = require('koa-body');
+var fs = require('fs');
+var Koa = require('koa');
 
-var fs = require('fs')
-// https://github.com/koajs/koa
-var Koa = require('koa')
-// https://www.npmjs.com/package/koa-body
-var koaBody = require('koa-body')
-// https://www.npmjs.com/package/koa-static
-var koaStatic = require('koa-static')
-// https://www.npmjs.com/package/koa2-cors
-var cors = require('koa2-cors')
-const app = new Koa()
-const port = process.env.PORT || '8100'
-const uploadHost = `http://localhost:${port}/uploads`
 
-// 设置上传文件的处理
-app.use(
-  koaBody({
-    // https://github.com/node-formidable/formidable
+var app = new Koa();
+var port = process.env.PORT || '8100';
+
+var uploadHost= `http://localhost:${port}/uploads/`;
+
+app.use(koaBody({
     formidable: {
-      // 设置文件的默认保存目录，不设置则保存在系统临时目录下
-      // 临时文件名如：demo-1\static\uploads\upload_3a72161983225410d5e095368762c3b4
-      uploadDir: path.resolve(__dirname, '../uploads'),
-      multiples: true,
+        //设置文件的默认保存目录，不设置则保存在系统临时目录下  
+        uploadDir: path.resolve(__dirname, '../uploads')
     },
-    multipart: true, // 支持文件上传
-  })
-)
+    multipart: true // 支持文件上传
+}));
 
-app.on('error', (err) => {
-  console.error('server error', err)
+app.use(koaStatic(
+    path.resolve(__dirname, '../static')
+));
+
+//允许跨域
+app.use(async (ctx, next) => {
+  ctx.set('Access-Control-Allow-Origin', ctx.headers.origin);
+  ctx.set("Access-Control-Max-Age", 864000);
+  // 设置所允许的HTTP请求方法
+  ctx.set("Access-Control-Allow-Methods", "OPTIONS, GET, POST");
+  // 字段是必需的。它也是一个逗号分隔的字符串，表明服务器支持的所有头信息字段.
+  ctx.set("Access-Control-Allow-Headers", "x-requested-with, accept, origin, content-type");
+
+  await next();
 })
-
-//开启静态文件访问
-app.use(koaStatic(path.resolve(__dirname, '../static')))
-// 开启跨域
-app.use(
-  cors({
-    origin: function (ctx) {
-      return '*' // 允许来自所有域名请求
-    },
-  })
-)
 
 //二次处理文件，修改名称
 app.use((ctx) => {
-  console.log(ctx.request.files)
-  let files = ctx.request.files ? ctx.request.files.f1 : [] // //得到上传文件的数组
-  //单文件上传容错
-  if (!Array.isArray(files)) {
-    files = [files]
-  }
-  console.log(files)
-  let result = []
-  files &&
-    files.forEach((file) => {
-      const path = file.path.replace(/\\/g, '/')
-      const fileName = file.name //原文件名称
-      let nextPath = ''
-      if (file.size > 0 && path) {
-        // let extArr = fileName.split('.')
-        // let ext = extArr[extArr.length - 1]
-        console.log(path)
-        nextPath = path.slice(0, path.lastIndexOf('/')) + '/' + fileName
-        //重命名文件
-        fs.renameSync(path, nextPath)
-        result.push(uploadHost + nextPath.slice(nextPath.lastIndexOf('/')))
-      }
-    })
-  ctx.body = `{
-    "fileUrl": ${JSON.stringify(result)}
-  }`
-})
+    console.log(ctx.request.files);
+    var body = ctx.request.body;
+    var files = ctx.request.files ? ctx.request.files.f1:[];//得到上传文件的数组
+    var result=[];
+    var fileToken = ctx.request.body.token;// 文件标识
+    var fileIndex=ctx.request.body.index;//文件顺序
+
+    console.log(files);
+
+    if(files &&  !Array.isArray(files)){//单文件上传容错
+        files = [files];
+    }
+
+    files && files.forEach(item=>{
+        var path = item.path.replace(/\\/g, '/');
+        var fname = item.name;//原文件名称
+        var nextPath = path.slice(0, path.lastIndexOf('/') + 1) + fileIndex + '-' + fileToken;
+        if (item.size > 0 && path) {
+            //得到扩展名
+            var extArr = fname.split('.');
+            var ext = extArr[extArr.length - 1];
+            //var nextPath = path + '.' + ext;
+            //重命名文件
+            fs.renameSync(path, nextPath);
+
+            result.push(uploadHost+ nextPath.slice(nextPath.lastIndexOf('/') + 1));
+        }
+    });
+
+    ctx.body = `{
+        "fileUrl":${JSON.stringify(result)}
+    }`;
+
+    if(body.type==='merge'){
+        //合并文件
+        var filename = body.filename,
+        chunkCount = body.chunkCount,
+            folder = path.resolve(__dirname, '../uploads')+'/';
+        
+        var writeStream = fs.createWriteStream(`${folder}${filename}`);
+
+        var cindex=0;
+        //合并文件
+        function fnMergeFile(){
+            var fname = `${folder}${cindex}-${fileToken}`;
+            var readStream = fs.createReadStream(fname);
+            readStream.pipe(writeStream, { end: false });
+            readStream.on("end", function () {
+                fs.unlink(fname, function (err) {
+                    if (err) {
+                        throw err;
+                    }
+                });
+                if (cindex+1 < chunkCount){
+                    cindex += 1;
+                    fnMergeFile();
+                }
+            });
+        }
+
+        fnMergeFile();
+
+        ctx.body='merge ok 200';
+    }
+});
+
+
+
 
 /**
- * http server
+ * Create HTTP server.
  */
-var server = http.createServer(app.callback())
-server.listen(port)
-console.log(`demo3 server start, port is ${port} ......   `)
+var server = http.createServer(app.callback());
+server.listen(port);
+console.log('demo12 server start ......   ');

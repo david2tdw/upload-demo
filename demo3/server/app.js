@@ -11,7 +11,7 @@ var koaStatic  = require('koa-static')
 var cors = require('koa2-cors')
 
 const app = new Koa()
-const port = process.env.PORT || '8100'
+const port = process.env.PORT || '5500'
 const uploadHost = `http://localhost:${port}/uploads`
 
 // 设置上传文件的处理

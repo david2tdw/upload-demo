@@ -25,5 +25,6 @@ Type ".help" for more information.
 直接双击static目录下的文件在浏览器打开。
 
 参考
+https://juejin.im/post/5da14778f265da5bb628e590#heading-16
 https://cloud.tencent.com/developer/article/1532107
 https://github.com/Bigerfe/fe-learn-code/tree/master/src/upfiles-demo
