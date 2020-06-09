@@ -1,5 +1,4 @@
 <section>
-  <p>iframe存在跨域问题</p>
   <p>iframe通过style="display:none;"隐藏iframe。</p>
   <p>form的target设置为iframe的name</p>
   <p>在upload后返回内容显示在iframe里</p>

@@ -15,6 +15,7 @@ const port = process.env.PORT || '8100'
 const uploadHost = `http://localhost:${port}/uploads`
 
 // 设置上传文件的处理
+// koa-body模块可以用来从 POST 请求的数据体里面提取键值对。
 app.use(koaBody({
   // https://github.com/node-formidable/formidable
   formidable: {

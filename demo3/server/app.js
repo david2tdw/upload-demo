@@ -11,7 +11,7 @@ var koaStatic  = require('koa-static')
 var cors = require('koa2-cors')
 
 const app = new Koa()
-const port = process.env.PORT || '5500'
+const port = process.env.PORT || '8100'
 const uploadHost = `http://localhost:${port}/uploads`
 
 // 设置上传文件的处理
@@ -34,6 +34,7 @@ app.on('error', (err) => {
 app.use(koaStatic(
   path.resolve(__dirname, '../static')
 ))
+
 // 开启跨域
 app.use(
   cors({
@@ -67,6 +68,7 @@ app.use(ctx => {
       result.push(uploadHost + nextPath.slice(nextPath.lastIndexOf('/')))
     }
   })
+
   ctx.body= `{
     "fileUrl": ${JSON.stringify(result)}
   }`
