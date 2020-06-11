@@ -15,17 +15,24 @@
     "demo9": "node ./demo9/server/app.js",
     "demo10": "node ./demo10/server/app.js",
     "demo11": "node ./demo11/server/app.js",
-    "demo12": "node ./demo12/server/app.js",
+    "start": "nodemon ./demo12/server/app.js",
     "test": ""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dayjs": "^1.8.28",
+    "fs-extra": "^9.0.1",
     "koa": "^2.12.0",
     "koa-body": "^4.1.3",
     "koa-static": "^5.0.0",
     "koa2-cors": "^2.0.6",
-    "spark-md5": "^3.0.1"
+    "multiparty": "^4.2.1",
+    "spark-md5": "^3.0.1",
+    "vue": "^2.6.11"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
   }
 }
