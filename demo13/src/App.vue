@@ -20,19 +20,19 @@
           {{ row.size | transformByte }}
         </template>
       </el-table-column>
-      <!-- <el-table-column label="进度" align="center">
+      <el-table-column label="进度" align="center">
         <template slot-scope="scope">
           <el-progress :percentage="scope.row.percentage" color="#909399"></el-progress>
         </template>
-      </el-table-column> -->
-      <el-table-column label="进度" align="center">
+      </el-table-column>
+      <!-- <el-table-column label="进度" align="center">
         <template v-slot="{ row }">
           <el-progress
             :percentage="row.percentage"
             color="#909399"
           ></el-progress>
         </template>
-      </el-table-column>
+      </el-table-column> -->
     </el-table>
   </div>
 </template>
@@ -80,13 +80,6 @@ export default {
       const loaded = this.data.map(item => item.size * item.percentage).reduce((acc, cur) => acc + cur)
       return parseInt((loaded / this.container.file.size).toFixed(2))
     }
-    // uploadPercentage() {
-    //   if (!this.container.file || !this.data.length) return 0;
-    //   const loaded = this.data
-    //     .map(item => item.size * item.percentage)
-    //     .reduce((acc, cur) => acc + cur);
-    //   return parseInt((loaded / this.container.file.size).toFixed(2));
-    // }
   },
   watch: {
     uploadPercentage (now) {
@@ -173,8 +166,11 @@ export default {
         return
       }
       this.resetData()
-      // ?
-      Object.assign(this.$data, this.$options.data())
+      // vm.$options: 用于当前 Vue 实例的初始化选项。
+      // https://cn.vuejs.org/v2/api/#vm-options
+      // console.log(this.$data)
+      // Object.assign(this.$data, this.$options.data())
+      // console.log(this.$data)
       this.container.file = file
     },
     async handleUpload () {
