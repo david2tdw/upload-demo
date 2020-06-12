@@ -1,3 +1,4 @@
+## 剪贴板上传
 [onpaste 事件](https://www.runoob.com/jsref/event-onpaste.html)
 div设置 contenteditable 为 "true", 支持onpaste事件。
 

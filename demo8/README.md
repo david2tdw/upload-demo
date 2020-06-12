@@ -1,3 +1,5 @@
+## 拖拽上传
+
 ## 步骤
 定义一个允许拖放文件的区域div.drop-box
 取消drop 事件的默认行为e.preventDefault();，不然浏览器会直接打开文件
