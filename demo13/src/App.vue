@@ -1,10 +1,10 @@
 <template>
   <div id="app">
     <div>
-      <input type="file" :disabled="status !== STATUS.wait" @change="handleFilechange">
+      <input type="file" :disabled="status !== Status.wait" @change="handleFileChange">
       <el-button @click="handleUpload" :disabled="uploadDisabled">上传</el-button>
-      <el-button @click="handleResume" v-if="status === STATUS.pause">恢复</el-button>
-      <el-button v-else :disabled="status !== STATUS.uploading || !container.hash" @click="handlePause">恢复</el-button>
+      <el-button @click="handleResume" v-if="status === Status.pause">恢复</el-button>
+      <el-button v-else :disabled="status !== Status.uploading || !container.hash" @click="handlePause">暂停</el-button>
     </div>
     <div>
       <div>计算文件 hash</div>
@@ -20,9 +20,17 @@
           {{ row.size | transformByte }}
         </template>
       </el-table-column>
-      <el-table-column label="进度" align="center">
+      <!-- <el-table-column label="进度" align="center">
         <template slot-scope="scope">
           <el-progress :percentage="scope.row.percentage" color="#909399"></el-progress>
+        </template>
+      </el-table-column> -->
+      <el-table-column label="进度" align="center">
+        <template v-slot="{ row }">
+          <el-progress
+            :percentage="row.percentage"
+            color="#909399"
+          ></el-progress>
         </template>
       </el-table-column>
     </el-table>
@@ -30,8 +38,8 @@
 </template>
 
 <script>
-const SIZE = 2 * 1024 * 1024 // 切片大小
-const STATUS = {
+const SIZE = 10 * 1024 * 1024 // 切片大小
+const Status = {
   wait: 'wait',
   pause: 'pause',
   uploading: 'uploading'
@@ -40,7 +48,8 @@ const STATUS = {
 export default {
   name: 'app',
   data: () => ({
-    status,
+    Status, // 定义的常量值 Status: Status
+    status: Status.wait,
     container: {
       file: null,
       hash: '',
@@ -61,7 +70,7 @@ export default {
   computed: {
     uploadDisabled () {
       return (
-        !this.container.file || [STATUS.pause, STATUS.uploading].includes(this.status)
+        !this.container.file || [Status.pause, Status.uploading].includes(this.status)
       )
     },
     uploadPercentage () {
@@ -71,6 +80,13 @@ export default {
       const loaded = this.data.map(item => item.size * item.percentage).reduce((acc, cur) => acc + cur)
       return parseInt((loaded / this.container.file.size).toFixed(2))
     }
+    // uploadPercentage() {
+    //   if (!this.container.file || !this.data.length) return 0;
+    //   const loaded = this.data
+    //     .map(item => item.size * item.percentage)
+    //     .reduce((acc, cur) => acc + cur);
+    //   return parseInt((loaded / this.container.file.size).toFixed(2));
+    // }
   },
   watch: {
     uploadPercentage (now) {
@@ -81,7 +97,7 @@ export default {
   },
   methods: {
     handlePause () {
-      this.status = STATUS.pause
+      this.status = Status.pause
       this.resetData()
     },
     resetData () {
@@ -92,18 +108,19 @@ export default {
       }
     },
     async handleResume () {
-      this.status = STATUS.uploading
+      this.status = Status.uploading
       const { uploadedList } = await this.verifyUpload(
         this.container.file.name,
         this.container.hash
       )
       await this.uploadChunks(uploadedList)
     },
-    // xhr
-    http (url, method = 'post', data, headers = {}, onProgress = e => e, requestList ) {
+    // xhr http的参数需要解构
+    http ({url, method = 'post', data, headers = {}, onProgress = e => e, requestList }) {
       return new Promise(resolve => {
         const xhr = new XMLHttpRequest()
         xhr.upload.onprogress = onProgress
+        console.log(url)
         xhr.open(method, url)
         Object.keys(headers).forEach(key => xhr.setRequestHeader(key, headers[key]))
         xhr.send(data)
@@ -164,7 +181,7 @@ export default {
       if (!this.container.file) {
         return
       }
-      this.status = STATUS.uploading
+      this.status = Status.uploading
 
       const fileChunkList = this.createFileChunk(this.container.file)
       this.container.hash = await this.calculateHash(fileChunkList)
@@ -174,7 +191,7 @@ export default {
       )
       if (!shouldUpload) {
         this.$message.success('秒传：上传成功')
-        this.status = STATUS.wait
+        this.status = Status.wait
         return
       }
       this.data = fileChunkList.map(({file}, index) => ({
@@ -196,7 +213,7 @@ export default {
     },
 
     // 上传切片，同时过滤已上传的切片
-    async uploadchunks (uploadedList = []) {
+    async uploadChunks (uploadedList = []) {
       const requestList = this.data
       .filter(({ hash }) => !uploadedList.includes(hash))
       .map(({ chunk, hash, index }) => {
@@ -213,6 +230,12 @@ export default {
         return this.http({
           url:'http://localhost:8100',
           data: formData,
+          // NOTE: 在上传的时候不能指定Content-Type， 如缺少boundary会报错
+          // https://developer.mozilla.org/zh-CN/docs/Web/API/FormData/Using_FormData_Objects
+          // Content-Type: multipart/form-data; boundary=----WebKitFormBoundarykf4ZkjJ29Ozyx1G8
+          // headers: {
+          //   "Content-Type": "multipart/form-data"
+          // },
           // onProgress是一个函数，传入参数e, (xhr.upload.onprogress = onProgress)
           onProgress: this.createProgressHandler(this.data[index]),
           requestList: this.requestList,
@@ -241,7 +264,7 @@ export default {
         })
       })
       this.$message.success('上传成功')
-      this.status = STATUS.wait
+      this.status = Status.wait
     },
 
     // 根据 hash 验证文件是否曾经已经被上传过
@@ -250,7 +273,7 @@ export default {
       const  { data } = await this.http({
         url: 'http://localhost:8100/verify',
         headers: {
-          'content-type': 'application/json',
+          "content-type": "application/json"
         },
         data: JSON.stringify({
           filename,

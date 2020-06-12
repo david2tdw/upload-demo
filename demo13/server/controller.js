@@ -8,14 +8,15 @@ const extractExt = filename => filename.slice(filename.lastIndexOf('.'), filenam
 const UPLOAD_DIR = path.resolve(__dirname, '..', 'uploads')
 
 
-const pipeStream = (path, writeStream) => new Promise(resolve => {
-  const readStream = fse.createReadStream(path)
-  readStream.on('end', () => {
-    fse.unlinkSync(path)
-    resolve()
+const pipeStream = (path, writeStream) => 
+  new Promise(resolve => {
+    const readStream = fse.createReadStream(path)
+    readStream.on('end', () => {
+      fse.unlinkSync(path)
+      resolve()
+    })
+    readStream.pipe(writeStream)
   })
-  readStream.pipe(writeStream)
-})
 
 
 // 合并切片
@@ -28,9 +29,10 @@ const mergeFileChunk = async (filePath, fileHash, size) => {
   // 否则直接读取目录的获得的顺序可能会错乱
   chunkPaths.sort((a, b) => a.split('-')[1] - b.split('-')[1])
 
+  // pipeStream是个promise，在map中需要return 或者不用{}
   await Promise.all(
     chunkPaths.map((chunkPath, index) => {
-      pipeStream(
+      return pipeStream(
         // ?
         path.resolve(chunkDir, chunkPath),
         // 指定位置创建可写流
@@ -41,12 +43,15 @@ const mergeFileChunk = async (filePath, fileHash, size) => {
       )
     })
   )
+  console.log(chunkDir)
   fse.rmdirSync(chunkDir) // 合并后删除保存切片的目录
 }
+
 
 const resolvePost = req => new Promise(resolve => {
   let chunk = ''
   req.on('data', data => {
+    // console.log(data)
     chunk += data
   })
   req.on('end', () => {
@@ -64,7 +69,7 @@ const createUploadedList = async fileHash => {
 
 module.exports = class {
   // 合并切片
-  async hanldeMerge (req, res) {
+  async handleMerge (req, res) {
     const data = await resolvePost(req)
     const {fileHash, filename, size} = data
     const ext = extractExt(filename)
