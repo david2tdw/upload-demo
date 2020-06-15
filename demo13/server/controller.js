@@ -22,7 +22,8 @@ const pipeStream = (path, writeStream) =>
 // 合并切片
 const mergeFileChunk = async (filePath, fileHash, size) => {
   const chunkDir = path.resolve(UPLOAD_DIR, fileHash)
-  //?
+  // 读取目录的内容。 异步的 readdir。
+  // http://nodejs.cn/api/fs.html#fs_fs_readdir_path_options_callback
   const chunkPaths = await fse.readdir(chunkDir)
 
   // 根据切片下标进行排序
@@ -33,7 +34,8 @@ const mergeFileChunk = async (filePath, fileHash, size) => {
   await Promise.all(
     chunkPaths.map((chunkPath, index) => {
       return pipeStream(
-        // ?
+        // path.resolve() 方法会将路径或路径片段的序列解析为绝对路径。
+        // http://nodejs.cn/api/path.html#path_path_resolve_paths
         path.resolve(chunkDir, chunkPath),
         // 指定位置创建可写流
         fse.createWriteStream(filePath, {
@@ -47,7 +49,8 @@ const mergeFileChunk = async (filePath, fileHash, size) => {
   fse.rmdirSync(chunkDir) // 合并后删除保存切片的目录
 }
 
-
+// req: http.IncomingMessage 继承自: <stream.Readable>。 在stream.Readable 类中有data和end事件。
+// http://nodejs.cn/api/stream.html#stream_event_data
 const resolvePost = req => new Promise(resolve => {
   let chunk = ''
   req.on('data', data => {
@@ -62,7 +65,7 @@ const resolvePost = req => new Promise(resolve => {
 
 // 返回已经上传切片名列表
 const createUploadedList = async fileHash => {
-  // ?
+  // https://nodejs.org/api/fs.html#fs_fs_existssync_path
   return fse.existsSync(path.resolve(UPLOAD_DIR, fileHash)) ? await fse.readdir(path.resolve(UPLOAD_DIR, fileHash)) : []
 }
 
@@ -111,7 +114,7 @@ module.exports = class {
 
       // 切片目录不存在，创建切片目录
       if (!fse.existsSync(chunkDir)) {
-        // ?
+        // https://nodejs.org/api/fs.html#fs_fs_mkdir_path_options_callback
         await fse.mkdirs(chunkDir)
       }
       // fs-extra 专用方法，类似 fs.rename 并且跨平台
